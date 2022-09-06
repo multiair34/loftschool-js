@@ -79,7 +79,7 @@ function findAllPSiblings(where) {
 function findError(where) {
     var result = [];
 
-    for (var child of where.childNodes) {
+    for (var child of where.children) { 
         result.push(child.innerText);
     }
 
@@ -99,6 +99,11 @@ function findError(where) {
    должно быть преобразовано в <div></div><p></p>
  */
 function deleteTextNodes(where) {
+  for(const node of where.childNodes) {
+    if(node.nodeType === 3) {
+      node.remove()
+    }
+  }
 }
 
 /*
@@ -113,6 +118,30 @@ function deleteTextNodes(where) {
    должно быть преобразовано в <span><div><b></b></div><p></p></span>
  */
 function deleteTextNodesRecursive(where) {
+ for(let node of where.childNodes) {
+
+   console.log(node, node.tagName, node.nodeType)
+
+   if (node.nodeType === 1) {
+     deleteTextNodesRecursive(node);
+   } else if (node.nodeType === 3) {
+     node.remove()
+   }
+ }
+
+/*   const arr = [];
+
+  for (let node of where.childNodes) {
+      if (node.nodeType === 1) {
+          deleteTextNodesRecursive(node);
+      } else {
+          arr.push(node);
+      }
+  }
+
+  for (let el of arr) {
+      el.remove();
+  } */
 }
 
 /*
@@ -135,8 +164,38 @@ function deleteTextNodesRecursive(where) {
      texts: 3
    }
  */
-function collectDOMStat(root) {
-}
+   function collectDOMStat(root) {
+    const stat = {
+      tags: {},
+      classes: {},
+      texts: 0
+    };
+    function scan(root) {
+      for(const child of root.childNodes) {
+        if(child.nodeType === 3) {
+          stat.texts++
+        } else if(child.nodeType === 1) {
+          if(child.tagName in stat.tags) {
+            stat.tags[child.tagName]++
+          } else {
+            stat.tags[child.tagName] = 1
+          }
+          for(const className of child.classList) {
+            if(className in stat.classes) {
+              stat.classes[className]++
+            } else {
+              stat.classes[className] = 1
+            }
+          }
+        }
+        scan(child);
+      }
+    }
+    scan(root);
+    return stat;
+  }
+
+  
 
 /*
  Задание 8 *:
@@ -171,6 +230,29 @@ function collectDOMStat(root) {
    }
  */
 function observeChildNodes(where, fn) {
+  const observer = new MutationObserver(mutationList => {
+    for (let mutation of mutationList) {
+        if (mutation.type === 'childList') {
+            fn(createObject(mutation));
+        }
+    }
+  });
+
+  function createObject(mutation) {
+      return {
+          type: mutation.removedNodes.length ? 'remove' : 'insert',
+          nodes: [
+              ...(mutation.addedNodes.length
+                  ? mutation.addedNodes
+                  : mutation.removedNodes)
+          ]
+      };
+  }
+
+  observer.observe(where, {
+      childList: true,
+      subtree: true
+  });
 }
 
 export {
