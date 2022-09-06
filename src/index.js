@@ -14,7 +14,6 @@ function createDivWithText(text) {
   const elem = document.createElement('div');
   
   elem.textContent = text;
-
   return elem
 }
 
